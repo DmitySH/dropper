@@ -2,7 +2,7 @@ package service
 
 import (
 	"bytes"
-	"dmitysh/your-drop/internal/entity"
+	"dmitysh/dropper/internal/entity"
 	"io"
 	"log"
 	"strconv"

@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"dmitysh/your-drop/internal/filedrop"
-	"dmitysh/your-drop/internal/service"
+	"dmitysh/dropper/internal/filedrop"
+	"dmitysh/dropper/internal/service"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

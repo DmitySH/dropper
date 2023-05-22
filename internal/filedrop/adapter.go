@@ -1,6 +1,6 @@
 package filedrop
 
-import "dmitysh/your-drop/internal/entity"
+import "dmitysh/dropper/internal/entity"
 
 type StreamSender struct {
 	gRPCFileStream FileDrop_GetFileServer

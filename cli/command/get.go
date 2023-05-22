@@ -2,8 +2,8 @@ package command
 
 import (
 	"context"
-	"dmitysh/your-drop/internal/filedrop"
-	"dmitysh/your-drop/internal/service"
+	"dmitysh/dropper/internal/filedrop"
+	"dmitysh/dropper/internal/service"
 	"errors"
 	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"

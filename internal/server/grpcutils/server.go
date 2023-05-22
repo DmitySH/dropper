@@ -1,7 +1,7 @@
 package grpcutils
 
 import (
-	"dmitysh/your-drop/internal/server"
+	"dmitysh/dropper/internal/server"
 	"fmt"
 	"google.golang.org/grpc"
 	"log"

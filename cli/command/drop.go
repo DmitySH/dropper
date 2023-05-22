@@ -1,10 +1,10 @@
 package command
 
 import (
-	"dmitysh/your-drop/internal/filedrop"
-	"dmitysh/your-drop/internal/server"
-	"dmitysh/your-drop/internal/server/grpcutils"
-	"dmitysh/your-drop/internal/service"
+	"dmitysh/dropper/internal/filedrop"
+	"dmitysh/dropper/internal/server"
+	"dmitysh/dropper/internal/server/grpcutils"
+	"dmitysh/dropper/internal/service"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

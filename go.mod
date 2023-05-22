@@ -1,4 +1,4 @@
-module dmitysh/your-drop
+module dmitysh/dropper
 
 go 1.20
 

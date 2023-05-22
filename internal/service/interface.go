@@ -1,6 +1,6 @@
 package service
 
-import "dmitysh/your-drop/internal/entity"
+import "dmitysh/dropper/internal/entity"
 
 type SendFile interface {
 	GenerateAndGetDropCode() string

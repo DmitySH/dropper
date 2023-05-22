@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "dmitysh/your-drop/pkg/api/filedrop";
+option go_package = "dmitysh/dropper/pkg/api/filedrop";
 
 import "google/protobuf/empty.proto";
 package filedrop;

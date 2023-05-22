@@ -1,8 +1,8 @@
 package main
 
 import (
-	"dmitysh/your-drop/cli/command"
-	"dmitysh/your-drop/configs/config"
+	"dmitysh/dropper/cli/command"
+	"dmitysh/dropper/configs/config"
 	"github.com/spf13/cobra"
 	"os"
 )
