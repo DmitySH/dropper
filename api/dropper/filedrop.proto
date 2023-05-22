@@ -1,0 +1,16 @@
+syntax = "proto3";
+option go_package = "dmitysh/your-drop/pkg/api/filedrop";
+
+import "google/protobuf/empty.proto";
+package filedrop;
+
+
+
+service FileDrop {
+  rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc GetFile(google.protobuf.Empty) returns (stream FileRequest);
+}
+
+message FileRequest {
+  bytes chunk_data = 1;
+}
