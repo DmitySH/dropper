@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"strconv"
 	"sync"
 )
@@ -39,13 +39,13 @@ func (f *FileDropServer) Ping(context.Context, *empty.Empty) (*empty.Empty, erro
 }
 
 func (f *FileDropServer) GetFile(_ *emptypb.Empty, fileStream filedrop.FileDrop_GetFileServer) error {
-	if checkSecretCodeErr := f.checkSecretCode(fileStream.Context()); checkSecretCodeErr != nil {
-		return checkSecretCodeErr
-	}
-
-	sendHeaderErr := fileStream.SendHeader(metadata.New(map[string]string{"filename": path.Base(f.filepath)}))
+	sendHeaderErr := fileStream.SendHeader(metadata.New(map[string]string{"filename": filepath.Base(f.filepath)}))
 	if sendHeaderErr != nil {
 		return status.Error(codes.Internal, fmt.Sprintf("can't send header: %v", sendHeaderErr))
+	}
+
+	if checkSecretCodeErr := f.checkSecretCode(fileStream.Context()); checkSecretCodeErr != nil {
+		return checkSecretCodeErr
 	}
 
 	log.Println("file requested")

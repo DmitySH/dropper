@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
-	"path"
+	fp "path/filepath"
 	"strconv"
 )
 
@@ -38,7 +38,7 @@ func (f *GetFileService) ReceiveAndSaveFileByChunks(fileReceiver ChunkReceiver, 
 		return mdErr
 	}
 
-	file, createErr := os.Create(path.Join(filepath, md["filename"]))
+	file, createErr := os.Create(fp.Join(filepath, md["filename"]))
 	if createErr != nil {
 		return createErr
 	}
