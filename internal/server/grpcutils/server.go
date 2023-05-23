@@ -28,7 +28,7 @@ func RunAndShutdownServer(serverCfg GRPCServerConfig, grpcServer *grpc.Server, f
 	go func() {
 		<-fileDropServer.StopCh
 		log.Println("stop sharing")
-		grpcServer.Stop()
+		grpcServer.GracefulStop()
 	}()
 
 	if serveErr := grpcServer.Serve(listener); serveErr != nil {

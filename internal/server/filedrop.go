@@ -38,7 +38,6 @@ func (f *FileDropServer) Ping(context.Context, *empty.Empty) (*empty.Empty, erro
 
 func (f *FileDropServer) GetFile(_ *emptypb.Empty, fileStream filedrop.FileDrop_GetFileServer) error {
 	if checkSecretCodeErr := f.checkSecretCode(fileStream.Context()); checkSecretCodeErr != nil {
-		log.Println("request with incorrect code")
 		return checkSecretCodeErr
 	}
 	log.Println("file requested")
@@ -71,11 +70,13 @@ func (f *FileDropServer) checkSecretCode(mdCtx context.Context) error {
 	}
 
 	correct, tooMuchAttempts := f.fileTransferService.CheckSecretCode(secretCode)
+
 	if tooMuchAttempts {
 		f.StopCh <- os.Interrupt
 		return IncorrectCodeErr
 	}
 	if !correct {
+		log.Println("request with incorrect code")
 		return IncorrectCodeErr
 	}
 

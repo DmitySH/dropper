@@ -76,7 +76,7 @@ func (f *SendFileService) SendFileByChunks(filepath string, fileSender ChunkSend
 
 	for {
 		n, readChunkErr := reader.Read(buf)
-		if readChunkErr == io.EOF {
+		if errors.Is(readChunkErr, io.EOF) {
 			break
 		}
 

@@ -3,16 +3,18 @@ package service
 import (
 	"bytes"
 	"dmitysh/dropper/internal/entity"
+	"errors"
 	"io"
 	"log"
 	"strconv"
 )
 
 type GetFileService struct {
+	repo FileRepository
 }
 
-func NewGetFileService() *GetFileService {
-	return &GetFileService{}
+func NewGetFileService(repo FileRepository) *GetFileService {
+	return &GetFileService{repo: repo}
 }
 
 func (f *GetFileService) ParseDropCode(dropCode string) (entity.DropCode, error) {
@@ -32,7 +34,7 @@ func (f *GetFileService) ReceiveFileByChunks(fileReceiver ChunkReceiver) ([]byte
 
 	for {
 		fileChunk, recvErr := fileReceiver.Receive()
-		if recvErr == io.EOF {
+		if errors.Is(recvErr, io.EOF) {
 			break
 		}
 		if recvErr != nil {
@@ -49,4 +51,8 @@ func (f *GetFileService) ReceiveFileByChunks(fileReceiver ChunkReceiver) ([]byte
 	}
 
 	return fileData.Bytes(), nil
+}
+
+func (f *GetFileService) SaveBytesToFile(filepath string, fileBytes []byte) error {
+	return f.repo.SaveBytesToFile(filepath, fileBytes)
 }

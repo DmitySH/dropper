@@ -11,6 +11,7 @@ type SendFile interface {
 type GetFile interface {
 	ParseDropCode(dropCode string) (entity.DropCode, error)
 	ReceiveFileByChunks(fileReceiver ChunkReceiver) ([]byte, error)
+	SaveBytesToFile(filepath string, fileBytes []byte) error
 }
 
 type ChunkSender interface {
@@ -19,4 +20,8 @@ type ChunkSender interface {
 
 type ChunkReceiver interface {
 	Receive() (entity.FileChunk, error)
+}
+
+type FileRepository interface {
+	SaveBytesToFile(filepath string, fileBytes []byte) error
 }

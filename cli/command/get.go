@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"dmitysh/dropper/internal/filedrop"
+	"dmitysh/dropper/internal/repository"
 	"dmitysh/dropper/internal/service"
 	"errors"
 	"fmt"
@@ -22,6 +23,7 @@ var (
 	IncorrectCodeErr = errors.New("code is incorrect")
 	ConnectionErr    = errors.New("can't connect")
 	ReceiveErr       = errors.New("error during file receiving")
+	SaveFileErr      = errors.New("can't save file")
 )
 
 const (
@@ -51,7 +53,8 @@ func NewGetCommand() *cobra.Command {
 }
 
 func runGet(_ *cobra.Command, _ *getOptions, args []string) error {
-	fileGetterService := service.NewGetFileService()
+	fileRepo := repository.NewLocalRepository()
+	fileGetterService := service.NewGetFileService(fileRepo)
 
 	dropCode, parseCodeErr := fileGetterService.ParseDropCode(args[0])
 	if parseCodeErr != nil {
@@ -83,6 +86,12 @@ func runGet(_ *cobra.Command, _ *getOptions, args []string) error {
 	}
 
 	log.Println("file received. size:", len(fileBytes))
+
+	if saveFileErr := fileGetterService.SaveBytesToFile("C:\\Users\\dm1tr\\Desktop\\g\\gg.go", fileBytes); saveFileErr != nil {
+		return SaveFileErr
+	}
+
+	log.Println("file saved")
 
 	return nil
 }
