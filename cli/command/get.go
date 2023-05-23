@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 	"dmitysh/dropper/internal/filedrop"
-	"dmitysh/dropper/internal/repository"
 	"dmitysh/dropper/internal/service"
 	"errors"
 	"fmt"
@@ -23,7 +22,6 @@ var (
 	IncorrectCodeErr = errors.New("code is incorrect")
 	ConnectionErr    = errors.New("can't connect")
 	ReceiveErr       = errors.New("error during file receiving")
-	SaveFileErr      = errors.New("can't save file")
 )
 
 const (
@@ -31,7 +29,7 @@ const (
 )
 
 type getOptions struct {
-	dropCode int
+	path string
 }
 
 func NewGetCommand() *cobra.Command {
@@ -46,15 +44,14 @@ func NewGetCommand() *cobra.Command {
 		},
 	}
 
-	//flags := cmd.Flags()
-	//flags.Int(&options.appName, "app-name", "n", "app", "Type of service controller ")
+	flags := cmd.Flags()
+	flags.StringVarP(&options.path, "path", "p", ".", "Path where to save file")
 
 	return cmd
 }
 
-func runGet(_ *cobra.Command, _ *getOptions, args []string) error {
-	fileRepo := repository.NewLocalRepository()
-	fileGetterService := service.NewGetFileService(fileRepo)
+func runGet(_ *cobra.Command, options *getOptions, args []string) error {
+	fileGetterService := service.NewGetFileService()
 
 	dropCode, parseCodeErr := fileGetterService.ParseDropCode(args[0])
 	if parseCodeErr != nil {
@@ -79,18 +76,12 @@ func runGet(_ *cobra.Command, _ *getOptions, args []string) error {
 		log.Println(getFileStreamErr)
 		return ReceiveErr
 	}
+
 	streamReceiver := filedrop.NewStreamReceiver(fileStream)
-	fileBytes, receiveFileErr := fileGetterService.ReceiveFileByChunks(streamReceiver)
+	receiveFileErr := fileGetterService.ReceiveAndSaveFileByChunks(streamReceiver, options.path)
 	if receiveFileErr != nil {
 		return errors.New(status.Convert(receiveFileErr).Message())
 	}
-
-	log.Println("file received. size:", len(fileBytes))
-
-	if saveFileErr := fileGetterService.SaveBytesToFile("C:\\Users\\dm1tr\\Desktop\\g\\gg.go", fileBytes); saveFileErr != nil {
-		return SaveFileErr
-	}
-
 	log.Println("file saved")
 
 	return nil

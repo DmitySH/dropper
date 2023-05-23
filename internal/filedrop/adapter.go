@@ -1,6 +1,8 @@
 package filedrop
 
-import "dmitysh/dropper/internal/entity"
+import (
+	"dmitysh/dropper/internal/entity"
+)
 
 type StreamSender struct {
 	gRPCFileStream FileDrop_GetFileServer
@@ -29,4 +31,19 @@ func (s *StreamReceiver) Receive() (entity.FileChunk, error) {
 	}
 
 	return fileChunk.GetChunkData(), nil
+}
+
+func (s *StreamReceiver) Meta() (map[string]string, error) {
+	md, getMdErr := s.gRPCFileStream.Header()
+	if getMdErr != nil {
+		return nil, getMdErr
+	}
+
+	plainMeta := make(map[string]string)
+
+	for k, v := range md {
+		plainMeta[k] = v[0]
+	}
+
+	return plainMeta, nil
 }

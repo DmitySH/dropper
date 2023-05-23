@@ -64,6 +64,10 @@ func (f *SendFileService) SendFileByChunks(filepath string, fileSender ChunkSend
 		f.fileDropMu.Unlock()
 	}
 
+	if checkPathErr := CheckFilepath(filepath); checkPathErr != nil {
+		return checkPathErr
+	}
+
 	file, openErr := os.Open(filepath)
 	if openErr != nil {
 		f.resetFileDropped()
@@ -112,4 +116,21 @@ func (f *SendFileService) resetFileDropped() {
 	f.fileDropMu.Lock()
 	f.fileDropped = false
 	f.fileDropMu.Unlock()
+}
+
+func CheckFilepath(filepath string) error {
+	fileInfo, statErr := os.Stat(filepath)
+	if statErr != nil {
+		if errors.Is(statErr, os.ErrNotExist) {
+			return errors.New("file not exists")
+		} else {
+			return errors.New("can't check file")
+		}
+	}
+
+	if fileInfo.IsDir() {
+		return errors.New("can't send directory")
+	}
+
+	return nil
 }

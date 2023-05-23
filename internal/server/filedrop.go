@@ -4,6 +4,7 @@ import (
 	"context"
 	"dmitysh/dropper/internal/filedrop"
 	"dmitysh/dropper/internal/service"
+	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"log"
 	"os"
+	"path"
 	"strconv"
 	"sync"
 )
@@ -40,6 +42,12 @@ func (f *FileDropServer) GetFile(_ *emptypb.Empty, fileStream filedrop.FileDrop_
 	if checkSecretCodeErr := f.checkSecretCode(fileStream.Context()); checkSecretCodeErr != nil {
 		return checkSecretCodeErr
 	}
+
+	sendHeaderErr := fileStream.SendHeader(metadata.New(map[string]string{"filename": path.Base(f.filepath)}))
+	if sendHeaderErr != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("can't send header: %v", sendHeaderErr))
+	}
+
 	log.Println("file requested")
 
 	streamSender := filedrop.NewStreamSender(fileStream)

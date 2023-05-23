@@ -1,20 +1,23 @@
 package service
 
 import (
-	"bytes"
 	"dmitysh/dropper/internal/entity"
 	"errors"
 	"io"
-	"log"
+	"os"
+	"path"
 	"strconv"
 )
 
+var (
+	IncorrectMetaErr = errors.New("incorrect meta")
+)
+
 type GetFileService struct {
-	repo FileRepository
 }
 
-func NewGetFileService(repo FileRepository) *GetFileService {
-	return &GetFileService{repo: repo}
+func NewGetFileService() *GetFileService {
+	return &GetFileService{}
 }
 
 func (f *GetFileService) ParseDropCode(dropCode string) (entity.DropCode, error) {
@@ -29,8 +32,17 @@ func (f *GetFileService) ParseDropCode(dropCode string) (entity.DropCode, error)
 	}, nil
 }
 
-func (f *GetFileService) ReceiveFileByChunks(fileReceiver ChunkReceiver) ([]byte, error) {
-	fileData := bytes.Buffer{}
+func (f *GetFileService) ReceiveAndSaveFileByChunks(fileReceiver ChunkReceiver, filepath string) error {
+	md, mdErr := checkAndGetMeta(fileReceiver)
+	if mdErr != nil {
+		return mdErr
+	}
+
+	file, createErr := os.Create(path.Join(filepath, md["filename"]))
+	if createErr != nil {
+		return createErr
+	}
+	defer file.Close()
 
 	for {
 		fileChunk, recvErr := fileReceiver.Receive()
@@ -38,21 +50,28 @@ func (f *GetFileService) ReceiveFileByChunks(fileReceiver ChunkReceiver) ([]byte
 			break
 		}
 		if recvErr != nil {
-			return nil, recvErr
+			return recvErr
 		}
 
-		size := len(fileChunk)
-		log.Printf("received a chunk with size: %d\n", size)
-
-		_, writeErr := fileData.Write(fileChunk)
+		_, writeErr := file.Write(fileChunk)
 		if writeErr != nil {
-			return nil, writeErr
+			return writeErr
 		}
 	}
 
-	return fileData.Bytes(), nil
+	return nil
 }
 
-func (f *GetFileService) SaveBytesToFile(filepath string, fileBytes []byte) error {
-	return f.repo.SaveBytesToFile(filepath, fileBytes)
+func checkAndGetMeta(fileReceiver ChunkReceiver) (map[string]string, error) {
+	md, mdErr := fileReceiver.Meta()
+	if mdErr != nil {
+		return nil, IncorrectMetaErr
+	}
+
+	_, ok := md["filename"]
+	if !ok {
+		return nil, errors.New("no filename in meta")
+	}
+
+	return md, nil
 }

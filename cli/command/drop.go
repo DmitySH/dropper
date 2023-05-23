@@ -34,6 +34,10 @@ func NewDropCommand() *cobra.Command {
 }
 
 func runDrop(_ *cobra.Command, _ *dropOptions, args []string) error {
+	if checkPathErr := service.CheckFilepath(args[0]); checkPathErr != nil {
+		return checkPathErr
+	}
+
 	fileSenderService := service.NewSendFileService(viper.GetInt("CHUNK_SIZE"))
 	dropCode := fileSenderService.GenerateAndGetDropCode()
 
