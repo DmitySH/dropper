@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"dmitysh/dropper/internal/filedrop"
+	"dmitysh/dropper/internal/pathutils"
 	"dmitysh/dropper/internal/service"
 	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -39,7 +40,14 @@ func (f *FileDropServer) Ping(context.Context, *empty.Empty) (*empty.Empty, erro
 }
 
 func (f *FileDropServer) GetFile(_ *emptypb.Empty, fileStream filedrop.FileDrop_GetFileServer) error {
-	sendHeaderErr := fileStream.SendHeader(metadata.New(map[string]string{"filename": filepath.Base(f.filepath)}))
+	var fullFilepath string
+	if pathutils.CheckPathType(f.filepath) == pathutils.Folder {
+		fullFilepath = f.filepath + ".zip"
+	} else {
+		fullFilepath = f.filepath
+	}
+
+	sendHeaderErr := fileStream.SendHeader(metadata.New(map[string]string{"filename": filepath.Base(fullFilepath)}))
 	if sendHeaderErr != nil {
 		return status.Error(codes.Internal, fmt.Sprintf("can't send header: %v", sendHeaderErr))
 	}
@@ -51,7 +59,7 @@ func (f *FileDropServer) GetFile(_ *emptypb.Empty, fileStream filedrop.FileDrop_
 	log.Println("file requested")
 
 	streamSender := filedrop.NewStreamSender(fileStream)
-	if sendFileErr := f.fileTransferService.SendFileByChunks(f.filepath, streamSender); sendFileErr != nil {
+	if sendFileErr := f.fileTransferService.SendFileByChunks(fullFilepath, streamSender); sendFileErr != nil {
 		return status.Error(codes.Internal, sendFileErr.Error())
 	}
 

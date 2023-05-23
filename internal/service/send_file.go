@@ -3,6 +3,7 @@ package service
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -21,7 +22,6 @@ const (
 )
 
 var (
-	OpenFileErr             = errors.New("can't open requested file")
 	FileAlreadyRequestedErr = errors.New("file already requested")
 	TransferFileErr         = errors.New("error during file transfer")
 )
@@ -64,37 +64,13 @@ func (f *SendFileService) SendFileByChunks(filepath string, fileSender ChunkSend
 		f.fileDropMu.Unlock()
 	}
 
-	if checkPathErr := CheckFilepath(filepath); checkPathErr != nil {
-		return checkPathErr
-	}
+	if sendErr := f.sendFile(filepath, fileSender); sendErr != nil {
+		log.Println("can't send file:", sendErr)
+		f.fileDropMu.Lock()
+		f.fileDropped = false
+		f.fileDropMu.Unlock()
 
-	file, openErr := os.Open(filepath)
-	if openErr != nil {
-		f.resetFileDropped()
-		log.Println("can't open requested file:", openErr)
-		return OpenFileErr
-	}
-
-	reader := bufio.NewReader(file)
-	buf := make([]byte, f.fileChunkSize)
-
-	for {
-		n, readChunkErr := reader.Read(buf)
-		if errors.Is(readChunkErr, io.EOF) {
-			break
-		}
-
-		if readChunkErr != nil {
-			f.resetFileDropped()
-			log.Println("can't read chunk to buffer:", readChunkErr)
-			return TransferFileErr
-		}
-
-		if sendErr := fileSender.Send(buf[:n]); sendErr != nil {
-			f.resetFileDropped()
-			log.Println("can't send chunk:", sendErr)
-			return TransferFileErr
-		}
+		return TransferFileErr
 	}
 
 	return nil
@@ -112,24 +88,28 @@ func getOutboundIP() net.IP {
 	return localAddr.IP
 }
 
-func (f *SendFileService) resetFileDropped() {
-	f.fileDropMu.Lock()
-	f.fileDropped = false
-	f.fileDropMu.Unlock()
-}
-
-func CheckFilepath(filepath string) error {
-	fileInfo, statErr := os.Stat(filepath)
-	if statErr != nil {
-		if errors.Is(statErr, os.ErrNotExist) {
-			return errors.New("file not exists")
-		} else {
-			return errors.New("can't check file")
-		}
+func (f *SendFileService) sendFile(filepath string, fileSender ChunkSender) error {
+	file, openErr := os.Open(filepath)
+	if openErr != nil {
+		return fmt.Errorf("can't open file: %w", openErr)
 	}
 
-	if fileInfo.IsDir() {
-		return errors.New("can't send directory")
+	reader := bufio.NewReader(file)
+	buf := make([]byte, f.fileChunkSize)
+
+	for {
+		n, readChunkErr := reader.Read(buf)
+		if errors.Is(readChunkErr, io.EOF) {
+			break
+		}
+
+		if readChunkErr != nil {
+			return fmt.Errorf("can't read chunk: %w", readChunkErr)
+		}
+
+		if sendErr := fileSender.Send(buf[:n]); sendErr != nil {
+			return fmt.Errorf("can't send chunk: %w", sendErr)
+		}
 	}
 
 	return nil

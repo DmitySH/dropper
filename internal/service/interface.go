@@ -13,6 +13,10 @@ type GetFile interface {
 	ReceiveAndSaveFileByChunks(fileReceiver ChunkReceiver, filepath string) error
 }
 
+type Archive interface {
+	FolderToTempZIPArchive(folderPath string) (string, error)
+}
+
 type ChunkSender interface {
 	Send(chunk entity.FileChunk) error
 }
