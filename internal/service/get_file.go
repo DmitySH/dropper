@@ -18,17 +18,27 @@ func NewGetFileService() *GetFileService {
 	return &GetFileService{}
 }
 
-func (f *GetFileService) ReceiveAndSaveFileByChunks(fileReceiver ChunkReceiver, filepath string) error {
+func (f *GetFileService) ReceiveAndSaveFileByChunks(fileReceiver ChunkReceiver, path string) error {
 	md, mdErr := checkAndGetMeta(fileReceiver)
 	if mdErr != nil {
 		return mdErr
 	}
 
-	file, createErr := os.Create(fp.Join(filepath, md["filename"]))
+	filepath := fp.Join(path, md["filename"])
+	file, createErr := os.Create(filepath)
 	if createErr != nil {
 		return createErr
 	}
-	defer file.Close()
+
+	success := false
+	defer func() {
+		if success {
+			_ = file.Close()
+		} else {
+			_ = file.Close()
+			_ = os.Remove(filepath)
+		}
+	}()
 
 	for {
 		fileChunk, recvErr := fileReceiver.Receive()
@@ -41,9 +51,12 @@ func (f *GetFileService) ReceiveAndSaveFileByChunks(fileReceiver ChunkReceiver, 
 
 		_, writeErr := file.Write(fileChunk)
 		if writeErr != nil {
+
 			return writeErr
 		}
 	}
+
+	success = true
 
 	return nil
 }
