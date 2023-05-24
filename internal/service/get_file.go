@@ -1,12 +1,10 @@
 package service
 
 import (
-	"dmitysh/dropper/internal/entity"
 	"errors"
 	"io"
 	"os"
 	fp "path/filepath"
-	"strconv"
 )
 
 var (
@@ -18,18 +16,6 @@ type GetFileService struct {
 
 func NewGetFileService() *GetFileService {
 	return &GetFileService{}
-}
-
-func (f *GetFileService) ParseDropCode(dropCode string) (entity.DropCode, error) {
-	code, convErr := strconv.Atoi(dropCode)
-	if convErr != nil {
-		return entity.DropCode{}, convErr
-	}
-
-	return entity.DropCode{
-		SecretCode: code % 100,
-		HostID:     code / 100,
-	}, nil
 }
 
 func (f *GetFileService) ReceiveAndSaveFileByChunks(fileReceiver ChunkReceiver, filepath string) error {

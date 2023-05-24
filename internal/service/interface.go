@@ -3,18 +3,20 @@ package service
 import "dmitysh/dropper/internal/entity"
 
 type SendFile interface {
-	GenerateAndGetDropCode() string
-	CheckSecretCode(code int) (bool, bool)
 	SendFileByChunks(filepath string, fileSender ChunkSender) error
 }
 
 type GetFile interface {
-	ParseDropCode(dropCode string) (entity.DropCode, error)
 	ReceiveAndSaveFileByChunks(fileReceiver ChunkReceiver, filepath string) error
 }
 
 type Archive interface {
 	FolderToTempZIPArchive(folderPath string) (string, error)
+}
+
+type SecureCode interface {
+	GenerateDropCode() string
+	CheckDropCode(dropCode string) bool
 }
 
 type ChunkSender interface {

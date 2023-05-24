@@ -7,18 +7,8 @@ import (
 	"io"
 	"log"
 	"math/rand"
-	"net"
 	"os"
-	"strconv"
-	"strings"
 	"sync"
-)
-
-const (
-	minSecretCode = 10
-	maxSecretCode = 99
-
-	maxIncorrectCodes = 2
 )
 
 var (
@@ -27,31 +17,18 @@ var (
 )
 
 type SendFileService struct {
-	secretCode            int
-	fileDropMu            sync.Mutex
-	codeAttemptsMu        sync.Mutex
-	fileDropped           bool
-	fileChunkSize         int
-	incorrectCodeAttempts int
+	secretCode    int
+	fileDropMu    sync.Mutex
+	fileDropped   bool
+	fileChunkSize int
 }
 
 func NewSendFileService(fileChunkSize int) *SendFileService {
-	return &SendFileService{fileChunkSize: fileChunkSize}
-}
-
-func (f *SendFileService) GenerateAndGetDropCode() string {
-	f.secretCode = rand.Intn(maxSecretCode-minSecretCode+1) + minSecretCode
-	dropCode := strings.Split(getOutboundIP().String(), ".")[3] + strconv.Itoa(f.secretCode)
-
-	return dropCode
-}
-
-func (f *SendFileService) CheckSecretCode(code int) (bool, bool) {
-	f.fileDropMu.Lock()
-	defer f.fileDropMu.Unlock()
-	f.incorrectCodeAttempts++
-
-	return f.secretCode == code, f.incorrectCodeAttempts > maxIncorrectCodes
+	secretCode := rand.Intn(maxSecretCode-minSecretCode+1) + minSecretCode
+	return &SendFileService{
+		fileChunkSize: fileChunkSize,
+		secretCode:    secretCode,
+	}
 }
 
 func (f *SendFileService) SendFileByChunks(filepath string, fileSender ChunkSender) error {
@@ -76,23 +53,12 @@ func (f *SendFileService) SendFileByChunks(filepath string, fileSender ChunkSend
 	return nil
 }
 
-func getOutboundIP() net.IP {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-
-	return localAddr.IP
-}
-
 func (f *SendFileService) sendFile(filepath string, fileSender ChunkSender) error {
 	file, openErr := os.Open(filepath)
 	if openErr != nil {
 		return fmt.Errorf("can't open file: %w", openErr)
 	}
+	defer file.Close()
 
 	reader := bufio.NewReader(file)
 	buf := make([]byte, f.fileChunkSize)

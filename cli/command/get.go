@@ -53,13 +53,13 @@ func NewGetCommand() *cobra.Command {
 func runGet(_ *cobra.Command, options *getOptions, args []string) error {
 	fileGetterService := service.NewGetFileService()
 
-	dropCode, parseCodeErr := fileGetterService.ParseDropCode(args[0])
+	dropCode, parseCodeErr := strconv.Atoi(args[0])
 	if parseCodeErr != nil {
-		log.Println(parseCodeErr)
+		log.Println("can't parse drop code: ", parseCodeErr)
 		return IncorrectCodeErr
 	}
 
-	conn, createConnErr := createConn(dropCode.HostID)
+	conn, createConnErr := createConn(hostIDFromDropCode(dropCode))
 	if createConnErr != nil {
 		log.Println(createConnErr)
 		return ConnectionErr
@@ -71,7 +71,7 @@ func runGet(_ *cobra.Command, options *getOptions, args []string) error {
 		return IncorrectCodeErr
 	}
 
-	fileStream, getFileStreamErr := getFileStream(dropCode.SecretCode, fileDropClient)
+	fileStream, getFileStreamErr := getFileStream(args[0], fileDropClient)
 	if getFileStreamErr != nil {
 		log.Println(getFileStreamErr)
 		return ReceiveErr
@@ -85,6 +85,10 @@ func runGet(_ *cobra.Command, options *getOptions, args []string) error {
 	log.Println("file saved")
 
 	return nil
+}
+
+func hostIDFromDropCode(dropCode int) int {
+	return dropCode / 100
 }
 
 func pingServer(fileDropClient filedrop.FileDropClient) error {
@@ -114,8 +118,8 @@ func createConn(hostID int) (*grpc.ClientConn, error) {
 	return conn, nil
 }
 
-func getFileStream(secretCode int, fileDropClient filedrop.FileDropClient) (filedrop.FileDrop_GetFileClient, error) {
-	md := metadata.New(map[string]string{"secret-code": strconv.Itoa(secretCode)})
+func getFileStream(dropCode string, fileDropClient filedrop.FileDropClient) (filedrop.FileDrop_GetFileClient, error) {
+	md := metadata.New(map[string]string{"drop-code": dropCode})
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	fileStream, getFileErr := fileDropClient.GetFile(ctx, &empty.Empty{})

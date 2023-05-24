@@ -14,7 +14,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"sync"
 )
 
@@ -22,17 +21,27 @@ var (
 	IncorrectCodeErr = status.Error(codes.InvalidArgument, "incorrect code")
 )
 
+const maxIncorrectCodesAttempts = 2
+
 type FileDropServer struct {
 	filedrop.UnimplementedFileDropServer
 	fileTransferService   service.SendFile
+	codeService           service.SecureCode
 	filepath              string
 	StopCh                chan os.Signal
 	incorrectCodeAttempts int
-	mu                    sync.Mutex
+	codeMu                sync.Mutex
+	incorrectRequests     int
 }
 
-func NewFileDropServer(fileTransferService service.SendFile, filepath string, stopCh chan os.Signal) *FileDropServer {
-	return &FileDropServer{fileTransferService: fileTransferService, StopCh: stopCh, filepath: filepath}
+func NewFileDropServer(fileTransferService service.SendFile, codeService service.SecureCode,
+	filepath string, stopCh chan os.Signal) *FileDropServer {
+	return &FileDropServer{
+		fileTransferService: fileTransferService,
+		StopCh:              stopCh,
+		filepath:            filepath,
+		codeService:         codeService,
+	}
 }
 
 func (f *FileDropServer) Ping(context.Context, *empty.Empty) (*empty.Empty, error) {
@@ -75,24 +84,25 @@ func (f *FileDropServer) checkSecretCode(mdCtx context.Context) error {
 		return status.Error(codes.InvalidArgument, "no meta provided")
 	}
 
-	secretCodeMeta := md.Get("secret-code")
-	if len(secretCodeMeta) != 1 {
+	dropCodeMeta := md.Get("drop-code")
+	if len(dropCodeMeta) != 1 {
 		return IncorrectCodeErr
 	}
 
-	secretCode, parseErr := strconv.Atoi(secretCodeMeta[0])
-	if parseErr != nil {
-		return IncorrectCodeErr
-	}
+	codeOk := f.codeService.CheckDropCode(dropCodeMeta[0])
 
-	correct, tooMuchAttempts := f.fileTransferService.CheckSecretCode(secretCode)
+	f.codeMu.Lock()
+	defer f.codeMu.Unlock()
 
-	if tooMuchAttempts {
-		f.StopCh <- os.Interrupt
-		return IncorrectCodeErr
-	}
-	if !correct {
-		log.Println("request with incorrect code")
+	if !codeOk {
+		log.Println("request with incorrect secret code")
+
+		f.incorrectCodeAttempts++
+		if f.incorrectCodeAttempts > maxIncorrectCodesAttempts && len(f.StopCh) == 0 {
+			f.StopCh <- os.Interrupt
+			return IncorrectCodeErr
+		}
+
 		return IncorrectCodeErr
 	}
 
