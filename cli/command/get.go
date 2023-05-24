@@ -80,7 +80,8 @@ func runGet(_ *cobra.Command, options *getOptions, args []string) error {
 	streamReceiver := filedrop.NewStreamReceiver(fileStream)
 	receiveFileErr := fileGetterService.ReceiveAndSaveFileByChunks(streamReceiver, options.path)
 	if receiveFileErr != nil {
-		return errors.New(status.Convert(receiveFileErr).Message())
+		log.Println(status.Convert(receiveFileErr).Message())
+		return ReceiveErr
 	}
 	log.Println("file saved")
 

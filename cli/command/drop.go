@@ -11,11 +11,17 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"log"
 	"os"
 	"path/filepath"
 )
 
 const archiveExt = ".zip"
+
+var (
+	IncorrectPathErr = errors.New("path to file/folder is not correct")
+	PreparationErr   = errors.New("can't prepare for file transfer")
+)
 
 type dropOptions struct {
 }
@@ -41,7 +47,7 @@ func runDrop(_ *cobra.Command, _ *dropOptions, args []string) error {
 
 	switch pathutils.CheckPathType(args[0]) {
 	case pathutils.Incorrect:
-		return errors.New("path to file/folder is not correct")
+		return IncorrectPathErr
 	case pathutils.Folder:
 		pathToTmpArchive, createTmpArchiveErr := createTmpArchive(path)
 		if createTmpArchiveErr != nil {
@@ -79,7 +85,8 @@ func runDrop(_ *cobra.Command, _ *dropOptions, args []string) error {
 
 	runSrvErr := grpcutils.RunAndShutdownServer(serverCfg, grpcServer, fileDropServer)
 	if runSrvErr != nil {
-		return fmt.Errorf("can't serve: %w", runSrvErr)
+		log.Println("can't serve:", runSrvErr)
+		return PreparationErr
 	}
 
 	return nil
@@ -93,7 +100,8 @@ func createTmpArchive(path string) (string, error) {
 
 	pathToTmpArchive, createTmpArchiveErr := archiveService.FolderToTempZIPArchive(path)
 	if createTmpArchiveErr != nil {
-		return "", fmt.Errorf("can't compress folder: %w", createTmpArchiveErr)
+		log.Println("can't compress folder:", createTmpArchiveErr)
+		return "", PreparationErr
 	}
 
 	return pathToTmpArchive, nil
