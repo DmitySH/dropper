@@ -2,12 +2,10 @@ package main
 
 import (
 	"dmitysh/dropper/cli/command"
-	"dmitysh/dropper/configs/config"
+	"dmitysh/dropper/configs/envconfig"
 	"github.com/spf13/cobra"
 	"os"
 )
-
-const cfgPath = "configs/app.env"
 
 func main() {
 	if runDropperErr := runDropper(); runDropperErr != nil {
@@ -16,7 +14,7 @@ func main() {
 }
 
 func runDropper() error {
-	config.LoadEnvConfig(cfgPath)
+	envconfig.LoadEmbeddedEnvConfig()
 	topCmd := newDropperCommand()
 	return topCmd.Execute()
 }
