@@ -7,3 +7,7 @@ gen-proto:
 .PHONY: run
 run:
 	go run cmd/dropper/main.go
+
+.PHONY: build
+build:
+	go build -o dropper cmd/dropper/main.go
