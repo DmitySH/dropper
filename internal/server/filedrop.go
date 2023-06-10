@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	IncorrectCodeErr = status.Error(codes.InvalidArgument, "incorrect code")
+	IncorrectCodeErr = status.Error(codes.InvalidArgument, "secure code is incorrect")
 )
 
 const maxIncorrectCodesAttempts = 2

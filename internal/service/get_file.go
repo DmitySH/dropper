@@ -51,7 +51,6 @@ func (f *GetFileService) ReceiveAndSaveFileByChunks(fileReceiver ChunkReceiver, 
 
 		_, writeErr := file.Write(fileChunk)
 		if writeErr != nil {
-
 			return writeErr
 		}
 	}

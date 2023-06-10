@@ -21,7 +21,6 @@ import (
 var (
 	IncorrectCodeErr = errors.New("code is incorrect")
 	ConnectionErr    = errors.New("can't connect")
-	ReceiveErr       = errors.New("error during file receiving")
 )
 
 const (
@@ -73,15 +72,15 @@ func runGet(_ *cobra.Command, options *getOptions, args []string) error {
 
 	fileStream, getFileStreamErr := getFileStream(args[0], fileDropClient)
 	if getFileStreamErr != nil {
-		log.Println(getFileStreamErr)
-		return ReceiveErr
+		log.Println("can't receive file:")
+		return getFileStreamErr
 	}
 
 	streamReceiver := filedrop.NewStreamReceiver(fileStream)
 	receiveFileErr := fileGetterService.ReceiveAndSaveFileByChunks(streamReceiver, options.path)
 	if receiveFileErr != nil {
-		log.Println(status.Convert(receiveFileErr).Message())
-		return ReceiveErr
+		log.Println("can't receive file:")
+		return errors.New(status.Convert(receiveFileErr).Message())
 	}
 	log.Println("file saved")
 
