@@ -6,6 +6,7 @@ import (
 	"dmitysh/dropper/internal/pathutils"
 	"dmitysh/dropper/internal/service"
 	"fmt"
+	"github.com/alexsergivan/transliterator"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -56,12 +57,15 @@ func (f *FileDropServer) GetFile(_ *emptypb.Empty, fileStream filedrop.FileDrop_
 		fullFilepath = f.filepath
 	}
 
-	sendHeaderErr := fileStream.SendHeader(metadata.New(map[string]string{"filename": filepath.Base(fullFilepath)}))
+	trans := transliterator.NewTransliterator(nil)
+	sendHeaderErr := fileStream.SendHeader(metadata.New(map[string]string{"filename": trans.Transliterate(filepath.Base(fullFilepath), "en")}))
 	if sendHeaderErr != nil {
+		log.Println(sendHeaderErr)
 		return status.Error(codes.Internal, fmt.Sprintf("can't send header: %v", sendHeaderErr))
 	}
 
 	if checkSecretCodeErr := f.checkSecretCode(fileStream.Context()); checkSecretCodeErr != nil {
+		log.Println(checkSecretCodeErr)
 		return checkSecretCodeErr
 	}
 
@@ -69,6 +73,7 @@ func (f *FileDropServer) GetFile(_ *emptypb.Empty, fileStream filedrop.FileDrop_
 
 	streamSender := filedrop.NewStreamSender(fileStream)
 	if sendFileErr := f.fileTransferService.SendFileByChunks(fullFilepath, streamSender); sendFileErr != nil {
+		log.Println(sendFileErr)
 		return status.Error(codes.Internal, sendFileErr.Error())
 	}
 
@@ -95,8 +100,6 @@ func (f *FileDropServer) checkSecretCode(mdCtx context.Context) error {
 	defer f.codeMu.Unlock()
 
 	if !codeOk {
-		log.Println("request with incorrect secret code")
-
 		f.incorrectCodeAttempts++
 		if f.incorrectCodeAttempts > maxIncorrectCodesAttempts && len(f.StopCh) == 0 {
 			f.StopCh <- os.Interrupt
