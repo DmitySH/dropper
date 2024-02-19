@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 type GRPCServerConfig struct {
@@ -27,6 +28,7 @@ func RunAndShutdownServer(serverCfg GRPCServerConfig, grpcServer *grpc.Server, f
 	signal.Notify(fileDropServer.StopCh, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		<-fileDropServer.StopCh
+		time.Sleep(time.Millisecond * 500)
 		log.Println("stop sharing")
 		grpcServer.GracefulStop()
 	}()
